@@ -7,7 +7,7 @@
 #   Rscript src/summarize.R CNTRY_NAME PROD_NAME YEAR
 #   Rscript src/summarize.R --input=data/processed/imports_california.csv YEAR
 #   Rscript src/summarize.R --output=data/processed/by_country.csv CNTRY_NAME
-#   Rscript src/summarize.R --prod-codes=data/input/prod_codes.txt YEAR PROD_CODE
+#   Rscript src/summarize.R --prod-codes=138,117,118 YEAR PROD_CODE
 #
 # With no grouping vars, sums QUANTITY across the whole file.
 
@@ -27,11 +27,9 @@ here <- function(...) {
 processed_dir  <- here("data", "processed")
 summaries_dir  <- here("data", "summaries")
 
-read_codes <- function(path) {
-  raw <- readLines(path, warn = FALSE)
-  codes <- unlist(strsplit(raw, "[,[:space:]]+"))
-  codes <- codes[nzchar(codes)]
-  codes
+parse_codes <- function(s) {
+  codes <- unlist(strsplit(s, "[,[:space:]]+"))
+  codes[nzchar(codes)]
 }
 
 summarize_imports <- function(group_vars = character(),
@@ -83,7 +81,7 @@ if (!interactive() && identical(sys.nframe(), 0L)) {
     if (startsWith(a, "--input="))  input  <- sub("^--input=",  "", a)
     else if (startsWith(a, "--output=")) output <- sub("^--output=", "", a)
     else if (startsWith(a, "--prod-codes=")) {
-      prod_codes <- read_codes(sub("^--prod-codes=", "", a))
+      prod_codes <- parse_codes(sub("^--prod-codes=", "", a))
     }
     else group_vars <- c(group_vars, a)
   }
