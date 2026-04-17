@@ -23,11 +23,13 @@ here <- function(...) {
   file.path(root, ...)
 }
 
-processed_dir <- here("data", "processed")
+processed_dir  <- here("data", "processed")
+summaries_dir  <- here("data", "summaries")
 
 summarize_imports <- function(group_vars = character(),
                               input  = file.path(processed_dir, "imports.csv"),
                               output = NULL) {
+  dir.create(summaries_dir, recursive = TRUE, showWarnings = FALSE)
   df <- read_csv(input, show_col_types = FALSE)
 
   if ("RPT_PERIOD" %in% names(df)) {
@@ -46,8 +48,9 @@ summarize_imports <- function(group_vars = character(),
   if (is.null(output)) {
     suffix <- if (!length(group_vars)) "total" else
       tolower(paste(group_vars, collapse = "-"))
-    output <- file.path(processed_dir, sprintf("summary_%s.csv", suffix))
+    output <- file.path(summaries_dir, sprintf("summary_%s.csv", suffix))
   }
+  dir.create(dirname(output), recursive = TRUE, showWarnings = FALSE)
   write_csv(out, output)
   message(sprintf("wrote %d rows to %s", nrow(out), output))
   invisible(out)
