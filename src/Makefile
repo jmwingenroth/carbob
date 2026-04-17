@@ -6,10 +6,11 @@
 #   make PORT_STATE=TEXAS
 #   make GROUP_VARS="YEAR CNTRY_NAME"
 
-START      ?= 2024-01
-END        ?= 2025-12
-PORT_STATE ?= CALIFORNIA
-GROUP_VARS ?= YEAR PROD_NAME CNTRY_NAME
+START           ?= 2024-01
+END             ?= 2025-12
+PORT_STATE      ?= CALIFORNIA
+GROUP_VARS      ?= YEAR PROD_CODE PROD_NAME CNTRY_NAME
+PROD_CODES_FILE ?= $(ROOT)/data/input/prod_codes.txt
 
 ROOT       := $(abspath $(dir $(lastword $(MAKEFILE_LIST)))/..)
 RSCRIPT    ?= Rscript
@@ -33,17 +34,19 @@ $(PROCESSED): | download
 	cd $(ROOT) && $(RSCRIPT) src/process.R $(PORT_STATE)
 
 summarize: $(SUMMARY)
-$(SUMMARY): $(PROCESSED)
+$(SUMMARY): $(PROCESSED) $(PROD_CODES_FILE)
 	cd $(ROOT) && $(RSCRIPT) src/summarize.R \
-		--input=$(PROCESSED) --output=$(SUMMARY) $(GROUP_VARS)
+		--input=$(PROCESSED) --output=$(SUMMARY) \
+		--prod-codes=$(PROD_CODES_FILE) $(GROUP_VARS)
 
 clean:
 	rm -f $(PROCESSED) $(SUMMARY)
 
 print-config:
-	@echo "START       = $(START)"
-	@echo "END         = $(END)"
-	@echo "PORT_STATE  = $(PORT_STATE)"
-	@echo "GROUP_VARS  = $(GROUP_VARS)"
-	@echo "PROCESSED   = $(PROCESSED)"
-	@echo "SUMMARY     = $(SUMMARY)"
+	@echo "START           = $(START)"
+	@echo "END             = $(END)"
+	@echo "PORT_STATE      = $(PORT_STATE)"
+	@echo "GROUP_VARS      = $(GROUP_VARS)"
+	@echo "PROD_CODES_FILE = $(PROD_CODES_FILE)"
+	@echo "PROCESSED       = $(PROCESSED)"
+	@echo "SUMMARY         = $(SUMMARY)"

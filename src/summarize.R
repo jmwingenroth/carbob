@@ -7,6 +7,7 @@
 #   Rscript src/summarize.R CNTRY_NAME PROD_NAME YEAR
 #   Rscript src/summarize.R --input=data/processed/imports_california.csv YEAR
 #   Rscript src/summarize.R --output=data/processed/by_country.csv CNTRY_NAME
+#   Rscript src/summarize.R --prod-codes=data/input/prod_codes.txt YEAR PROD_CODE
 #
 # With no grouping vars, sums QUANTITY across the whole file.
 
@@ -26,14 +27,30 @@ here <- function(...) {
 processed_dir  <- here("data", "processed")
 summaries_dir  <- here("data", "summaries")
 
+read_codes <- function(path) {
+  raw <- readLines(path, warn = FALSE)
+  codes <- unlist(strsplit(raw, "[,[:space:]]+"))
+  codes <- codes[nzchar(codes)]
+  codes
+}
+
 summarize_imports <- function(group_vars = character(),
                               input  = file.path(processed_dir, "imports.csv"),
-                              output = NULL) {
+                              output = NULL,
+                              prod_codes = NULL) {
   dir.create(summaries_dir, recursive = TRUE, showWarnings = FALSE)
   df <- read_csv(input, show_col_types = FALSE)
 
   if ("RPT_PERIOD" %in% names(df)) {
     df$YEAR <- as.integer(format(as.Date(df$RPT_PERIOD), "%Y"))
+  }
+
+  if (!is.null(prod_codes) && length(prod_codes)) {
+    before <- nrow(df)
+    df <- df[as.character(df$PROD_CODE) %in% as.character(prod_codes), ,
+             drop = FALSE]
+    message(sprintf("filter PROD_CODE in {%s}: %d -> %d rows",
+                    paste(prod_codes, collapse = ","), before, nrow(df)))
   }
 
   missing <- setdiff(group_vars, names(df))
@@ -60,11 +77,16 @@ if (!interactive() && identical(sys.nframe(), 0L)) {
   args <- commandArgs(trailingOnly = TRUE)
   input  <- file.path(processed_dir, "imports.csv")
   output <- NULL
+  prod_codes <- NULL
   group_vars <- character()
   for (a in args) {
     if (startsWith(a, "--input="))  input  <- sub("^--input=",  "", a)
     else if (startsWith(a, "--output=")) output <- sub("^--output=", "", a)
+    else if (startsWith(a, "--prod-codes=")) {
+      prod_codes <- read_codes(sub("^--prod-codes=", "", a))
+    }
     else group_vars <- c(group_vars, a)
   }
-  summarize_imports(group_vars = group_vars, input = input, output = output)
+  summarize_imports(group_vars = group_vars, input = input, output = output,
+                    prod_codes = prod_codes)
 }
